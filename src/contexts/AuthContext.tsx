@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
+
 type User = {
   id: string;
   email: string;
@@ -33,7 +34,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setLoading(false);
   }, []);
-
   const login = async (email: string, password: string) => {
     try {
       const res = await fetch(
