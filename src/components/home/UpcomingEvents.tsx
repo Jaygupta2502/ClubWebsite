@@ -2,28 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Clock, ArrowRight } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const UpcomingEvents: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/events');
+        const res = await fetch(`${API_BASE_URL}/api/events`);
         const data = await res.json();
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const filtered = data
-  .filter((event: any) => {
-    const eventDate = new Date(`${event.date}T${event.startTime}`);
-    return (
-      eventDate >= today &&
-      event.approvedByFaculty &&
-      event.approvedByVenue &&
-      event.status === 'final_approved'
-    );
-  })
+          .filter((event: any) => {
+            const eventDate = new Date(`${event.date}T${event.startTime}`);
+            return (
+              eventDate >= today &&
+              event.approvedByFaculty &&
+              event.approvedByVenue &&
+              event.status === 'final_approved'
+            );
+          })
           .sort((a: any, b: any) => {
             const aDate = new Date(`${a.date}T${a.startTime}`);
             const bDate = new Date(`${b.date}T${b.startTime}`);
@@ -68,14 +70,14 @@ const UpcomingEvents: React.FC = () => {
               <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 animate-fade-in">
                 <div className="relative">
                   <img
-                    src={`http://localhost:5000${event.bannerImageUrl}`}
+                    src={`${API_BASE_URL}${event.bannerImageUrl}`}
                     alt={event.title}
-                    className="w-full h-48 object-contain object-centre bg-black"
+                    className="w-full h-48 object-contain bg-black"
                   />
                   <div className="absolute top-3 left-3">
                     <div className="bg-white rounded-full p-1 shadow-md">
                       <img
-                        src={`http://localhost:5000${event.clubLogoUrl}`}
+                        src={`${API_BASE_URL}${event.clubLogoUrl}`}
                         alt={event.club}
                         className="w-8 h-8 rounded-full object-contain bg-white"
                       />
@@ -115,7 +117,7 @@ const UpcomingEvents: React.FC = () => {
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <img
-                        src={`http://localhost:5000${event.clubLogoUrl}`}
+                        src={`${API_BASE_URL}${event.clubLogoUrl}`}
                         alt={event.club}
                         className="w-6 h-6 rounded-full"
                       />
