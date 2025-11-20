@@ -8,7 +8,7 @@ import {
 type DashboardHeaderProps = {
   onOpenMessages: () => void;
 };
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const DashboardHeader = ({ onOpenMessages }: DashboardHeaderProps) => {
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -25,7 +25,7 @@ const DashboardHeader = ({ onOpenMessages }: DashboardHeaderProps) => {
       return;
     }
 
-    const res = await fetch('http://localhost:5000/api/events/notifications', {
+    const res = await fetch(`${API_BASE}/api/events/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -80,7 +80,7 @@ const DashboardHeader = ({ onOpenMessages }: DashboardHeaderProps) => {
   const markAsRead = async (id: string) => {
   try {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
-await fetch(`http://localhost:5000/api/events/notifications/${id}/read`, {
+await fetch(`${API_BASE}/api/events/notifications/${id}/read`, {
   method: 'PATCH',
   headers: { Authorization: `Bearer ${token}` },
 });

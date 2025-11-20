@@ -14,7 +14,7 @@ import {
   Clock,
   MapPin,
 } from 'lucide-react';
-
+const API = import.meta.env.VITE_API_BASE_URL;
 const DeanDashboard: React.FC = () => {
   const { user } = useAuth();
 

@@ -14,7 +14,8 @@ const ManageHods: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', department: '' });
   const [editId, setEditId] = useState<string | null>(null);
 
-  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 
   const fetchHods = async () => {
     try {
