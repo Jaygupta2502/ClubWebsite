@@ -24,13 +24,14 @@ const PendingApprovalsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
 const [showModal, setShowModal] = useState(false);
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const token = JSON.parse(localStorage.getItem('campusEventsUser') || '{}')?.token;
 
   useEffect(() => {
     const fetchApprovals = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/events/pending/venue', {
+        const res = await axios.get(`${API_BASE}/api/events/pending/venue`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -50,8 +51,8 @@ const [showModal, setShowModal] = useState(false);
   const handleUpdateStatus = async (id: string, action: 'approve' | 'reject') => {
     const url =
       action === 'approve'
-        ? `http://localhost:5000/api/events/approve/venue/${id}`
-        : `http://localhost:5000/api/events/reject/${id}`;
+        ? `${API_BASE}/api/events/approve/venue/${id}`
+        : `${API_BASE}/api/events/reject/${id}`
 
     try {
       const res = await axios.patch(
@@ -193,7 +194,7 @@ const [showModal, setShowModal] = useState(false);
           <div>
             <p><strong>Banner Image:</strong></p>
             <img
-              src={`http://localhost:5000${selectedEvent.bannerImageUrl}`}
+              src={`${API_BASE}${selectedEvent.bannerImageUrl}`}
               alt="Banner"
               className="mt-2 h-40 rounded border"
             />
@@ -204,7 +205,7 @@ const [showModal, setShowModal] = useState(false);
           <div>
             <p><strong>Club Logo:</strong></p>
             <img
-              src={`http://localhost:5000${selectedEvent.clubLogoUrl}`}
+              src={`${API_BASE}${selectedEvent.clubLogoUrl}`}
               alt="Logo"
               className="mt-2 h-24 w-24 object-contain border rounded"
             />

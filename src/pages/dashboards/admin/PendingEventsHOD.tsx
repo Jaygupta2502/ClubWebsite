@@ -7,12 +7,12 @@ const PendingEventsHOD = () => {
   const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
 const [showModal, setShowModal] = useState(false);
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
  const fetchEvents = async () => {
   try {
     const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
-    const res = await axios.get('http://localhost:5000/api/events/pending/hod', {
+    const res = await axios.get(`${API_BASE}/api/events/pending/hod`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -28,7 +28,7 @@ const [showModal, setShowModal] = useState(false);
     try {
       const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
 
-await axios.patch(`http://localhost:5000/api/events/approve/hod/${id}`, null, {
+await axios.patch(`${API_BASE}/api/events/approve/hod/${id}`, null, {
   headers: {
     Authorization: `Bearer ${token}`,
   },
@@ -42,7 +42,7 @@ await axios.patch(`http://localhost:5000/api/events/approve/hod/${id}`, null, {
   const rejectEvent = async () => {
     try {
       const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
-      await axios.patch(`http://localhost:5000/api/events/reject/hod/${selectedEventId}`, {
+      await axios.patch(`${API_BASE}/api/events/reject/hod/${selectedEventId}`, {
   reason: rejectReason,
 }, {
   headers: {
@@ -196,7 +196,7 @@ await axios.patch(`http://localhost:5000/api/events/approve/hod/${id}`, null, {
           <div>
             <p><strong>Banner Image:</strong></p>
             <img
-              src={`http://localhost:5000${selectedEvent.bannerImageUrl}`}
+              src={`${API_BASE}${selectedEvent.bannerImageUrl}`}
               alt="Banner"
               className="mt-2 h-40 rounded border"
             />
@@ -207,7 +207,7 @@ await axios.patch(`http://localhost:5000/api/events/approve/hod/${id}`, null, {
           <div>
             <p><strong>Club Logo:</strong></p>
             <img
-              src={`http://localhost:5000${selectedEvent.clubLogoUrl}`}
+              src={`${API_BASE}${selectedEvent.clubLogoUrl}`}
               alt="Logo"
               className="mt-2 h-24 w-24 object-contain border rounded"
             />

@@ -19,10 +19,11 @@ const FacultyDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const fetchPendingEvents = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/events/pending/faculty/${user?.id}`, {
+      const res = await fetch(`${API_BASE}/api/events/pending/faculty/${user?.id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -46,8 +47,8 @@ const FacultyDashboard = () => {
   const updateStatus = async (eventId, action) => {
   const route =
     action === 'approve'
-      ? `http://localhost:5000/api/events/approve/faculty/${eventId}`
-      : `http://localhost:5000/api/events/reject/${eventId}`;
+      ? `${API_BASE}/api/events/approve/faculty/${eventId}`
+      : `${API_BASE}/api/events/reject/${eventId}`
 
   try {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
@@ -253,7 +254,7 @@ const FacultyDashboard = () => {
           <div>
             <p><strong>Banner Image:</strong></p>
             <img
-              src={`http://localhost:5000${selectedEvent.bannerImageUrl}`}
+              src={`${API_BASE}${selectedEvent.bannerImageUrl}`}
               alt="Banner"
               className="mt-2 h-40 rounded border"
             />
@@ -263,7 +264,7 @@ const FacultyDashboard = () => {
           <div>
             <p><strong>Club Logo:</strong></p>
             <img
-              src={`http://localhost:5000${selectedEvent.clubLogoUrl}`}
+              src={`${API_BASE}${selectedEvent.clubLogoUrl}`}
               alt="Logo"
               className="mt-2 h-24 w-24 object-contain border rounded"
             />

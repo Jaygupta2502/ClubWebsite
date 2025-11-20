@@ -72,6 +72,8 @@ const HodDashboard: React.FC = () => {
   const [clubReports, setClubReports] = useState([]);
   const [selectedReportEvent, setSelectedReportEvent] = useState<any>(null);
 const [showReportModal, setShowReportModal] = useState(false);
+const API = import.meta.env.VITE_API_BASE_URL;
+
 
 
   useEffect(() => {
@@ -81,7 +83,7 @@ const [showReportModal, setShowReportModal] = useState(false);
 
   try {
     
-    const res = await fetch("http://localhost:5000/api/hod/clubs", {
+    const res = await fetch(`${API}/api/hod/clubs`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -105,7 +107,7 @@ useEffect(() => {
   const fetchFaculty = async () => {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
 
-    const res = await fetch("http://localhost:5000/api/hod/faculty", {
+    const res = await fetch(`${API}/api/hod/faculty`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -130,7 +132,7 @@ useEffect(() => {
     }
 
     try {
-     const res = await fetch("http://localhost:5000/api/events/with-reports", {
+     const res = await fetch(`${API}/api/events/with-reports`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -170,7 +172,7 @@ const fetchStats = async () => {
   const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
 
   try {
-    const res = await fetch("http://localhost:5000/api/hod/stats", {
+    const res = await fetch(`${API}/api/hod/stats`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -216,7 +218,7 @@ useEffect(() => {
 
   const fetchInactiveUsers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/hod/inactive-users", {
+      const res = await fetch(`${API}/api/hod/inactive-users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -341,10 +343,11 @@ const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
   let body = {};
 
   if (showAddModal === 'club') {
-    url = 'http://localhost:5000/api/hod/create-club-user';
+    url = `${API}/api/hod/create-club-user`;
+;
     body = clubForm;
   } else if (showAddModal === 'faculty') {
-    url = 'http://localhost:5000/api/hod/create-faculty-user';
+    url = `${API}/api/hod/create-faculty-user`;
     body = facultyForm;
   } else {
     return;
@@ -382,7 +385,7 @@ const handleEditSubmit = async (e: React.FormEvent) => {
 
   try {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
-    const res = await fetch(`http://localhost:5000/api/hod/user/${id}`, {
+    const res = await fetch(`${API}/api/hod/user/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -417,7 +420,7 @@ const handleEditSubmit = async (e: React.FormEvent) => {
 
   try {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
-    const res = await fetch(`http://localhost:5000/api/hod/user/${id}`, {
+    const res = await fetch(`${API}/api/hod/user/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });
