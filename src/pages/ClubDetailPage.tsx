@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Users, Calendar, Award, Mail, Building, Sparkles } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const ClubDetailPage: React.FC = () => {
   const { id } = useParams();
   const [club, setClub] = useState<any>(null);
@@ -9,7 +11,7 @@ const ClubDetailPage: React.FC = () => {
   useEffect(() => {
     const fetchClub = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/club/${id}`);
+        const res = await fetch(`${API_BASE_URL}/api/club/${id}`);
         const data = await res.json();
         setClub(data);
       } catch (err) {
@@ -32,7 +34,7 @@ const ClubDetailPage: React.FC = () => {
               <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden border-4 border-indigo-100 shadow-md">
                 {club.clubLogo ? (
                   <img
-                    src={`http://localhost:5000${club.clubLogo}`}
+                    src={`${API_BASE_URL}${club.clubLogo}`}
                     alt="Club Logo"
                     className="w-full h-full object-contain p-1"
                   />
@@ -75,7 +77,7 @@ const ClubDetailPage: React.FC = () => {
               {club.clubPhoto && (
                 <div className="h-64 w-full rounded-xl overflow-hidden mb-6">
                   <img
-                    src={`http://localhost:5000${club.clubPhoto}`}
+                    src={`${API_BASE_URL}${club.clubPhoto}`}
                     alt="Club Banner"
                     className="w-full h-full object-cover"
                   />
@@ -108,6 +110,7 @@ const ClubDetailPage: React.FC = () => {
               )}
             </div>
           </div>
+
         </div>
       </div>
     </div>

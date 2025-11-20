@@ -1,6 +1,8 @@
-import React, { useEffect,useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Filter, Users, Calendar, Award, ChevronDown } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 type Club = {
   _id: string;
@@ -24,41 +26,38 @@ const ClubsPage: React.FC = () => {
 
   const departments = [
     'IT',
-    'CSE', 
+    'CSE',
     'MECHANICAL',
     'CIVIL',
     'DESIGN',
     'MANET'
   ];
 
-  // Sample clubs data
   const [clubs, setClubs] = useState<Club[]>([]);
 
-useEffect(() => {
-  const fetchClubs = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/club/all');
-      const data = await res.json();
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/club/all`);
+        const data = await res.json();
 
-      if (Array.isArray(data)) {
-        setClubs(data); // ✅ correct format
-      } else if (Array.isArray(data.clubs)) {
-        setClubs(data.clubs); // ✅ fallback if wrapped in "clubs" key
-      } else {
-        console.error('Unexpected clubs response:', data);
+        if (Array.isArray(data)) {
+          setClubs(data);
+        } else if (Array.isArray(data.clubs)) {
+          setClubs(data.clubs);
+        } else {
+          console.error('Unexpected clubs response:', data);
+          setClubs([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch clubs:', err);
         setClubs([]);
       }
-    } catch (err) {
-      console.error('Failed to fetch clubs:', err);
-      setClubs([]);
-    }
-  };
+    };
 
-  fetchClubs();
-}, []);
+    fetchClubs();
+  }, []);
 
-
-  // Filter clubs based on search query and department
   const filteredClubs = clubs.filter((club) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -112,11 +111,10 @@ useEffect(() => {
             </button>
           </div>
 
-          {/* Filter Options */}
           {isFilterOpen && (
             <div className="mt-4 pt-4 border-t border-neutral-200 animate-slide-down">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Departments */}
+
                 <div>
                   <h3 className="font-medium mb-3">Department</h3>
                   <select
@@ -131,7 +129,6 @@ useEffect(() => {
                   </select>
                 </div>
 
-                {/* Sort By */}
                 <div>
                   <h3 className="font-medium mb-3">Sort By</h3>
                   <select className="input">
@@ -187,42 +184,38 @@ useEffect(() => {
           {filteredClubs.length > 0 ? (
             filteredClubs.map((club) => (
               <div key={club._id} className="card card-hover overflow-hidden group">
-  {/* Club Photo Banner */}
-  <div className="relative h-48 mb-4 overflow-hidden rounded-lg">
-    <img
-      src={`http://localhost:5000${club.clubPhoto}`}
-      alt={`${club.name} Banner`}
-      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-    />
+                <div className="relative h-48 mb-4 overflow-hidden rounded-lg">
+                  <img
+                    src={`${API_BASE_URL}${club.clubPhoto}`}
+                    alt={`${club.name} Banner`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
 
-    {/* Club Logo on Top-Left */}
-    {club.clubLogo && (
-      <img
-        src={`http://localhost:5000${club.clubLogo}`}
-        alt={`${club.name} Logo`}
-        className="absolute top-3 left-3 w-12 h-12 rounded-full border-2 border-white object-contain p-1 shadow-md"
-      />
-    )}
+                  {club.clubLogo && (
+                    <img
+                      src={`${API_BASE_URL}${club.clubLogo}`}
+                      alt={`${club.name} Logo`}
+                      className="absolute top-3 left-3 w-12 h-12 rounded-full border-2 border-white object-contain p-1 shadow-md"
+                    />
+                  )}
 
-    {/* Department Badge */}
-    <div className="absolute top-3 right-3 bg-primary-100 text-primary-700 px-2 py-1 rounded-lg text-xs font-medium">
-      {club.department}
-    </div>
+                  <div className="absolute top-3 right-3 bg-primary-100 text-primary-700 px-2 py-1 rounded-lg text-xs font-medium">
+                    {club.department}
+                  </div>
 
-    {/* Established Date */}
-    <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
-      <div className="text-xs text-neutral-600">Est. {club.establishedYear}</div>
-    </div>
-  </div>
-                
+                  <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
+                    <div className="text-xs text-neutral-600">Est. {club.establishedYear}</div>
+                  </div>
+                </div>
+
                 <h3 className="text-lg font-semibold mb-2 group-hover:text-primary-600 transition-colors">
                   {club.clubName}
                 </h3>
-                
+
                 <p className="text-sm text-neutral-600 mb-3 line-clamp-2">
                   {club.description}
                 </p>
-                
+
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center text-sm text-neutral-600">
                     <Users size={16} className="mr-1 text-neutral-400" />
@@ -233,11 +226,11 @@ useEffect(() => {
                     <span>{club.totalEvents} events</span>
                   </div>
                 </div>
-                
+
                 <div className="mb-4">
-                  <div className="text-sm text-neutral-600 mb-1">President:  {club.name}</div>
+                  <div className="text-sm text-neutral-600 mb-1">President: {club.name}</div>
                 </div>
-                
+
                 {club.achievements.length > 0 && (
                   <div className="mb-4">
                     <div className="flex items-center text-sm text-neutral-600 mb-2">
@@ -249,7 +242,7 @@ useEffect(() => {
                     </div>
                   </div>
                 )}
-                
+
                 <Link
                   to={`/clubs/${club._id}`}
                   className="btn-primary w-full text-center"
