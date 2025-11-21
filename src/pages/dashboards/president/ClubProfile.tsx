@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-
+const API = import.meta.env.VITE_API_BASE_URL;
 const ClubProfile = () => {
   const [clubData, setClubData] = useState(null);
 
   useEffect(() => {
     const fetchClubDetails = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/club/profile', {
+        const res = await fetch(`${API}/api/club/profile`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },

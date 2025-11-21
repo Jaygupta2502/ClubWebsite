@@ -51,6 +51,7 @@ const PresidentDashboard: React.FC = () => {
     staffCoordinator: '',
     staffInvited: '',
   });
+const API = import.meta.env.VITE_API_BASE_URL;
 
   const buildings = [
     {
@@ -71,7 +72,7 @@ const PresidentDashboard: React.FC = () => {
   const fetchPendingReports = async () => {
     try {
       const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
-      const res = await fetch('http://localhost:5000/api/events/pending-reports', {
+      const res = await fetch(`${API}/api/events/pending-reports`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -137,7 +138,7 @@ const PresidentDashboard: React.FC = () => {
         formData.append('eventPoster', reportFormData.eventPoster);
       }
 
-      const res = await fetch(`http://localhost:5000/api/events/report/${selectedEvent._id}`, {
+      const res = await fetch(`${API}/api/events/report/${selectedEvent._id}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -151,7 +152,7 @@ const PresidentDashboard: React.FC = () => {
       console.log('✅ Report submitted:', data);
 
       // Refresh data
-      const updated = await fetch('http://localhost:5000/api/events/pending-reports', {
+      const updated = await fetch(`${API}/api/events/pending-reports`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const updatedReports = await updated.json();

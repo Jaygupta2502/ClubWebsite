@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
+const API = import.meta.env.VITE_API_BASE_URL;
 const CreateEvent = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -109,7 +109,7 @@ if (!isWithinAllowedTime(formData.startTime) || !isWithinAllowedTime(formData.en
     try {
      const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
 
-const res = await fetch('http://localhost:5000/api/events/create', {
+const res = await fetch(`${API}/api/events/create`, {
   method: 'POST',
   headers: {
     Authorization: `Bearer ${token}`, // <-- use the parsed token

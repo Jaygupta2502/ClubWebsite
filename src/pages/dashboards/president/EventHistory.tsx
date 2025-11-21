@@ -11,6 +11,7 @@ const EventHistory: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
 const [isModalOpen, setIsModalOpen] = useState(false);
 const [availableClubs, setAvailableClubs] = useState<string[]>([]);
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const openModal = (event: any) => {
   setSelectedEvent(event);
@@ -25,7 +26,7 @@ const closeModal = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/events/all');
+        const res = await fetch(`${API}/api/events/all`);
         const data = await res.json();
         setEvents(data);
         const uniqueClubs = ['all', ...new Set(data.map((e: any) => e.club))];
@@ -186,14 +187,14 @@ setAvailableClubs(uniqueClubs);
         {selectedEvent.bannerImageUrl && (
           <div>
             <p><strong>Banner Image:</strong></p>
-            <img src={`http://localhost:5000${selectedEvent.bannerImageUrl}`} alt="Banner" className="mt-2 h-40 rounded border" />
+            <img src={`${API}${selectedEvent.bannerImageUrl}`} alt="Banner" className="mt-2 h-40 rounded border" />
           </div>
         )}
 
         {selectedEvent.clubLogoUrl && (
           <div>
             <p><strong>Club Logo:</strong></p>
-            <img src={`http://localhost:5000${selectedEvent.clubLogoUrl}`} alt="Logo" className="mt-2 h-20 w-20 border rounded" />
+            <img src={`${API}${selectedEvent.clubLogoUrl}`} alt="Logo" className="mt-2 h-20 w-20 border rounded" />
           </div>
         )}
       </div>

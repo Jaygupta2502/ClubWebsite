@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { FileText, ArrowLeft } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-
+const API = import.meta.env.VITE_API_BASE_URL;
 const ReportHistory: React.FC = () => {
   const { user } = useAuth();
   const [reports, setReports] = useState([]);
@@ -12,7 +12,7 @@ const ReportHistory: React.FC = () => {
     const fetchReports = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await fetch('http://localhost:5000/api/reports/mine', {
+        const res = await fetch(`${API}/api/reports/mine`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -48,7 +48,7 @@ const handleDownloadPDF = async (report: any) => {
     pdf.setTextColor(33, 33, 33);
 
     // Load and draw poster image at the top
-    const imageUrl = `http://localhost:5000/uploads/${report.eventPoster}`;
+    const imageUrl = `${API}/uploads/${report.eventPoster}`;
     const response = await fetch(imageUrl);
     const blob = await response.blob();
     const reader = new FileReader();
@@ -145,7 +145,7 @@ const handleDownloadPDF = async (report: any) => {
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
                       <a
-                        href={`http://localhost:5000/uploads/${report.eventPoster}`}
+                        href={`${API}/uploads/${report.eventPoster}`}
                         target="_blank"
                         rel="noreferrer"
                         className="text-blue-600 hover:underline flex items-center"
