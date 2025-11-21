@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import {
   User, Upload, Save, Building, Calendar, Users, Award, Camera, Edit, Image as ImageIcon
 } from 'lucide-react';
-
+const API = import.meta.env.VITE_API_BASE_URL;
 const Profile: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -27,7 +27,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
    const fetchProfile = async () => {
   try {
-    const res = await fetch("http://localhost:5000/api/club/profile", {
+    const res = await fetch(`${API}/api/club/profile`, {
       headers: {
         Authorization: `Bearer ${user.token}`,
       },
@@ -48,7 +48,7 @@ const Profile: React.FC = () => {
     const fetchEventCount = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
-    const res = await fetch('http://localhost:5000/api/events/club/total', {
+    const res = await fetch(`${API}/api/events/club/total`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -125,7 +125,7 @@ setProfileData(prev => ({
     }
 
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
-    const res = await fetch('http://localhost:5000/api/club/profile', {
+    const res = await fetch(`${API}/api/club/profile`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${user.token}`
@@ -169,7 +169,7 @@ setProfileData(prev => ({
                 <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4 overflow-hidden">
                   {typeof profileData.clubLogo === 'string' && profileData.clubLogo !== '' ? (
   <img
-    src={`http://localhost:5000${profileData.clubLogo}`}
+    src={`${API}${profileData.clubLogo}`}
     alt="Club Logo"
     className="w-full h-full object-cover"
   />
