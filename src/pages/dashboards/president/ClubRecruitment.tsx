@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
-import { 
-  UserPlus, Link as LinkIcon, Calendar, Clock, Search, Filter, 
-  Plus, Eye, Edit, Trash2, ExternalLink, AlertCircle, CheckCircle 
+import React, { useState, useEffect } from 'react';
+import {
+  UserPlus,
+  Link as LinkIcon,
+  Calendar,
+  Clock,
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Extend type to match backend
 type Recruitment = {
-  id: string;
+  _id: string;
+  id?: string;
   club: string;
   title: string;
   description: string;
@@ -17,6 +31,8 @@ type Recruitment = {
   status: 'Active' | 'Closed' | 'Draft' | 'Expired';
   applicants: number;
   createdDate: string;
+  clubLogoUrl?: string;
+  attachments?: { fileName: string; fileUrl: string }[];
 };
 
 const ClubRecruitment: React.FC = () => {
@@ -24,7 +40,11 @@ const ClubRecruitment: React.FC = () => {
   const [selectedClub, setSelectedClub] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState({
+  const [editingRecruitment, setEditingRecruitment] = useState<Recruitment | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [recruitments, setRecruitments] = useState<Recruitment[]>([]);
+
+  const initialFormData = {
     club: '',
     title: '',
     description: '',
@@ -33,9 +53,13 @@ const ClubRecruitment: React.FC = () => {
     endDate: '',
     startTime: '',
     endTime: '',
-  });
+    clubLogo: null as File | null,
+    attachments: [] as File[]
+  };
 
-  // Sample clubs data
+  const [formData, setFormData] = useState<any>(initialFormData);
+
+  // Sample clubs data (keep for dropdown UI)
   const clubs = [
     { id: 1, name: 'Tech Club' },
     { id: 2, name: 'Cultural Club' },
@@ -45,88 +69,129 @@ const ClubRecruitment: React.FC = () => {
     { id: 6, name: 'Debate Society' }
   ];
 
-  // Sample recruitment data
-  const recruitments: Recruitment[] = [
-    {
-      id: '1',
-      club: 'Tech Club',
-      title: 'Technical Team Recruitment 2025',
-      description: 'Join our technical team! We are looking for passionate developers, designers, and tech enthusiasts to join our club.',
-      googleFormUrl: 'https://forms.google.com/tech-club-recruitment-2025',
-      startDate: '2025-06-01',
-      endDate: '2025-06-15',
-      startTime: '09:00',
-      endTime: '23:59',
-      status: 'Active',
-      applicants: 45,
-      createdDate: '2025-05-25'
-    },
-    {
-      id: '2',
-      club: 'Cultural Club',
-      title: 'Cultural Committee Recruitment',
-      description: 'Calling all creative minds! Join our cultural committee and help organize amazing cultural events and festivals.',
-      googleFormUrl: 'https://forms.google.com/cultural-club-recruitment',
-      startDate: '2025-05-20',
-      endDate: '2025-06-05',
-      startTime: '10:00',
-      endTime: '22:00',
-      status: 'Closed',
-      applicants: 32,
-      createdDate: '2025-05-15'
-    },
-    {
-      id: '3',
-      club: 'Sports Club',
-      title: 'Sports Coordinator Positions',
-      description: 'We are recruiting sports coordinators for various sports activities and tournaments.',
-      googleFormUrl: 'https://forms.google.com/sports-club-coordinators',
-      startDate: '2025-06-10',
-      endDate: '2025-06-25',
-      startTime: '08:00',
-      endTime: '20:00',
-      status: 'Draft',
-      applicants: 0,
-      createdDate: '2025-06-01'
-    },
-    {
-      id: '4',
-      club: 'E-Cell',
-      title: 'Entrepreneurship Team 2025',
-      description: 'Join our entrepreneurship cell and be part of startup initiatives, business competitions, and innovation projects.',
-      googleFormUrl: 'https://forms.google.com/ecell-team-recruitment',
-      startDate: '2025-04-15',
-      endDate: '2025-04-30',
-      startTime: '09:00',
-      endTime: '23:59',
-      status: 'Expired',
-      applicants: 28,
-      createdDate: '2025-04-10'
-    }
-  ];
+  // Fetch recruitments from backend
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/recruitments`)
+      .then((res) => res.json())
+      .then((data) => setRecruitments(data))
+      .catch((err) => console.error('Error loading recruitments:', err));
+  }, []);
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('New recruitment submitted:', formData);
-    setShowNewRecruitmentForm(false);
-    setFormData({
-      club: '',
-      title: '',
-      description: '',
-      googleFormUrl: '',
-      startDate: '',
-      endDate: '',
-      startTime: '',
-      endTime: '',
-    });
+
+    try {
+      const token = localStorage.getItem('token');
+
+      // Prepare FormData
+      const form = new FormData();
+
+      // Append text fields except files
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== 'attachments' && key !== 'clubLogo') {
+          form.append(key, value);
+        }
+      });
+
+      // Append single club logo
+      if (formData.clubLogo) {
+        form.append('clubLogo', formData.clubLogo);
+      }
+
+      // Append multiple attachments
+      if (formData.attachments && formData.attachments.length > 0) {
+        formData.attachments.forEach((file: File) => {
+          form.append('attachments', file);
+        });
+      }
+
+      // Determine endpoint based on create vs edit
+      let endpoint = `${API_BASE_URL}/api/recruitments`;
+      let method: 'POST' | 'PATCH' = 'POST';
+
+      if (isEditing && editingRecruitment) {
+        const id = editingRecruitment._id || editingRecruitment.id;
+        endpoint = `${API_BASE_URL}/api/recruitments/${id}`;
+        method = 'PATCH';
+      }
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: form
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || 'Failed to submit recruitment');
+        return;
+      }
+
+      if (method === 'PATCH') {
+        // Update existing recruitment in list
+        const updated = data.recruitment;
+        setRecruitments((prev) =>
+          prev.map((r) =>
+            (r._id || r.id) === (updated._id || updated.id) ? updated : r
+          )
+        );
+        alert('Recruitment updated successfully!');
+      } else {
+        // Add new recruitment to table
+        setRecruitments((prev) => [data.recruitment, ...prev]);
+        alert('Recruitment created successfully!');
+      }
+
+      // Reset states
+      setShowNewRecruitmentForm(false);
+      setIsEditing(false);
+      setEditingRecruitment(null);
+      setFormData(initialFormData);
+    } catch (error) {
+      console.error('Error submitting recruitment:', error);
+      alert('Something went wrong while submitting recruitment');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this recruitment?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const res = await fetch(`${API_BASE_URL}/api/recruitments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || 'Delete failed');
+        return;
+      }
+
+      setRecruitments((prev) => prev.filter((r) => (r._id || r.id) !== id));
+      alert('Recruitment deleted successfully!');
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete recruitment');
+    }
   };
 
   // Check if recruitment is currently active
@@ -134,60 +199,72 @@ const ClubRecruitment: React.FC = () => {
     const now = new Date();
     const startDateTime = new Date(`${recruitment.startDate}T${recruitment.startTime}`);
     const endDateTime = new Date(`${recruitment.endDate}T${recruitment.endTime}`);
-    
+
     return now >= startDateTime && now <= endDateTime && recruitment.status === 'Active';
   };
 
   // Auto-update status based on dates
   const getActualStatus = (recruitment: Recruitment) => {
     if (recruitment.status === 'Draft') return 'Draft';
-    
+
     const now = new Date();
     const startDateTime = new Date(`${recruitment.startDate}T${recruitment.startTime}`);
     const endDateTime = new Date(`${recruitment.endDate}T${recruitment.endTime}`);
-    
+
     if (now < startDateTime) return 'Draft';
     if (now > endDateTime) return 'Expired';
     return 'Active';
   };
 
   // Filter recruitments
-  const filteredRecruitments = recruitments.filter(recruitment => {
+  const filteredRecruitments = recruitments.filter((recruitment) => {
     const actualStatus = getActualStatus(recruitment);
     const matchesClub = selectedClub === 'all' || recruitment.club === selectedClub;
     const matchesStatus = selectedStatus === 'all' || actualStatus === selectedStatus;
-    const matchesSearch = 
+    const matchesSearch =
       recruitment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       recruitment.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       recruitment.club.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesClub && matchesStatus && matchesSearch;
   });
 
   const getStatusBadge = (recruitment: Recruitment) => {
     const actualStatus = getActualStatus(recruitment);
-    
+
     switch (actualStatus) {
       case 'Active':
-        return <span className="bg-success-100 text-success-700 px-2 py-1 rounded-full text-xs font-medium flex items-center">
-          <CheckCircle size={12} className="mr-1" />
-          Active
-        </span>;
+        return (
+          <span className="bg-success-100 text-success-700 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+            <CheckCircle size={12} className="mr-1" />
+            Active
+          </span>
+        );
       case 'Closed':
-        return <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-medium">
-          Closed
-        </span>;
+        return (
+          <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-medium">
+            Closed
+          </span>
+        );
       case 'Draft':
-        return <span className="bg-warning-100 text-warning-700 px-2 py-1 rounded-full text-xs font-medium">
-          Draft
-        </span>;
+        return (
+          <span className="bg-warning-100 text-warning-700 px-2 py-1 rounded-full text-xs font-medium">
+            Draft
+          </span>
+        );
       case 'Expired':
-        return <span className="bg-error-100 text-error-700 px-2 py-1 rounded-full text-xs font-medium flex items-center">
-          <AlertCircle size={12} className="mr-1" />
-          Expired
-        </span>;
+        return (
+          <span className="bg-error-100 text-error-700 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+            <AlertCircle size={12} className="mr-1" />
+            Expired
+          </span>
+        );
       default:
-        return <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-medium">{actualStatus}</span>;
+        return (
+          <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-medium">
+            {actualStatus}
+          </span>
+        );
     }
   };
 
@@ -197,11 +274,18 @@ const ClubRecruitment: React.FC = () => {
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold mb-2">Club Recruitment</h1>
-          <p className="text-neutral-600">Manage club member recruitment with time-based registration</p>
+          <p className="text-neutral-600">
+            Manage club member recruitment with time-based registration
+          </p>
         </div>
-        <button 
+        <button
           className="btn-primary flex items-center"
-          onClick={() => setShowNewRecruitmentForm(true)}
+          onClick={() => {
+            setIsEditing(false);
+            setEditingRecruitment(null);
+            setFormData(initialFormData);
+            setShowNewRecruitmentForm(true);
+          }}
         >
           <Plus size={18} className="mr-2" />
           <span>New Recruitment</span>
@@ -211,11 +295,16 @@ const ClubRecruitment: React.FC = () => {
       {/* New Recruitment Form */}
       {showNewRecruitmentForm && (
         <div className="bg-white rounded-xl shadow-md p-6 mb-8 animate-fade-in">
-          <h2 className="text-lg font-semibold mb-4">Create New Recruitment</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            {isEditing ? 'Edit Recruitment' : 'Create New Recruitment'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="club" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="club"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   Club <span className="text-error-600">*</span>
                 </label>
                 <select
@@ -227,13 +316,18 @@ const ClubRecruitment: React.FC = () => {
                   required
                 >
                   <option value="">Select Club</option>
-                  {clubs.map(club => (
-                    <option key={club.id} value={club.name}>{club.name}</option>
+                  {clubs.map((club) => (
+                    <option key={club.id} value={club.name}>
+                      {club.name}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   Recruitment Title <span className="text-error-600">*</span>
                 </label>
                 <input
@@ -250,7 +344,10 @@ const ClubRecruitment: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-neutral-700 mb-2"
+              >
                 Description <span className="text-error-600">*</span>
               </label>
               <textarea
@@ -266,7 +363,10 @@ const ClubRecruitment: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="googleFormUrl" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label
+                htmlFor="googleFormUrl"
+                className="block text-sm font-medium text-neutral-700 mb-2"
+              >
                 Google Form URL <span className="text-error-600">*</span>
               </label>
               <div className="relative">
@@ -288,7 +388,10 @@ const ClubRecruitment: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="startDate"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   Start Date <span className="text-error-600">*</span>
                 </label>
                 <input
@@ -302,7 +405,10 @@ const ClubRecruitment: React.FC = () => {
                 />
               </div>
               <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="endDate"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   End Date <span className="text-error-600">*</span>
                 </label>
                 <input
@@ -319,7 +425,10 @@ const ClubRecruitment: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="startTime"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   Start Time <span className="text-error-600">*</span>
                 </label>
                 <input
@@ -333,7 +442,10 @@ const ClubRecruitment: React.FC = () => {
                 />
               </div>
               <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="endTime"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   End Time <span className="text-error-600">*</span>
                 </label>
                 <input
@@ -348,16 +460,64 @@ const ClubRecruitment: React.FC = () => {
               </div>
             </div>
 
+            {/* File uploads (logo + attachments) */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Club Logo (Optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setFormData((prev: any) => ({ ...prev, clubLogo: file }));
+                }}
+                className="input"
+              />
+              {formData.clubLogo && (
+                <p className="text-sm text-neutral-600 mt-1">
+                  Selected Logo: {formData.clubLogo.name}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Attachments (PDF, Docs, Images)
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setFormData((prev: any) => ({ ...prev, attachments: files }));
+                }}
+                className="input"
+              />
+              {formData.attachments.length > 0 && (
+                <ul className="text-sm text-neutral-600 mt-1">
+                  {formData.attachments.map((f: File, idx: number) => (
+                    <li key={idx}>📎 {f.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
                 className="btn-outline"
-                onClick={() => setShowNewRecruitmentForm(false)}
+                onClick={() => {
+                  setShowNewRecruitmentForm(false);
+                  setIsEditing(false);
+                  setEditingRecruitment(null);
+                  setFormData(initialFormData);
+                }}
               >
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                Create Recruitment
+                {isEditing ? 'Update Recruitment' : 'Create Recruitment'}
               </button>
             </div>
           </form>
@@ -369,7 +529,10 @@ const ClubRecruitment: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex flex-wrap gap-4">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"
+              />
               <input
                 type="text"
                 placeholder="Search recruitments..."
@@ -384,8 +547,10 @@ const ClubRecruitment: React.FC = () => {
               onChange={(e) => setSelectedClub(e.target.value)}
             >
               <option value="all">All Clubs</option>
-              {clubs.map(club => (
-                <option key={club.id} value={club.name}>{club.name}</option>
+              {clubs.map((club) => (
+                <option key={club.id} value={club.name}>
+                  {club.name}
+                </option>
               ))}
             </select>
             <select
@@ -435,11 +600,16 @@ const ClubRecruitment: React.FC = () => {
             <tbody className="bg-white divide-y divide-neutral-200">
               {filteredRecruitments.length > 0 ? (
                 filteredRecruitments.map((recruitment) => (
-                  <tr key={recruitment.id} className="hover:bg-neutral-50">
+                  <tr
+                    key={recruitment._id || recruitment.id}
+                    className="hover:bg-neutral-50"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="font-medium">{recruitment.title}</div>
-                        <div className="text-sm text-neutral-600 max-w-xs truncate">{recruitment.description}</div>
+                        <div className="text-sm text-neutral-600 max-w-xs truncate">
+                          {recruitment.description}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
@@ -487,21 +657,40 @@ const ClubRecruitment: React.FC = () => {
                         >
                           <ExternalLink size={16} className="text-neutral-600" />
                         </a>
-                        <button 
-                          className="p-1 rounded-md hover:bg-neutral-100" 
+                        <button
+                          className="p-1 rounded-md hover:bg-neutral-100"
                           title="View Details"
                         >
                           <Eye size={16} className="text-neutral-600" />
                         </button>
-                        <button 
-                          className="p-1 rounded-md hover:bg-neutral-100" 
+                        <button
+                          className="p-1 rounded-md hover:bg-neutral-100"
                           title="Edit"
+                          onClick={() => {
+                            setEditingRecruitment(recruitment);
+                            setFormData({
+                              ...initialFormData,
+                              club: recruitment.club,
+                              title: recruitment.title,
+                              description: recruitment.description,
+                              googleFormUrl: recruitment.googleFormUrl,
+                              startDate: recruitment.startDate,
+                              endDate: recruitment.endDate,
+                              startTime: recruitment.startTime,
+                              endTime: recruitment.endTime
+                            });
+                            setIsEditing(true);
+                            setShowNewRecruitmentForm(true);
+                          }}
                         >
                           <Edit size={16} className="text-neutral-600" />
                         </button>
-                        <button 
-                          className="p-1 rounded-md hover:bg-neutral-100" 
+                        <button
+                          className="p-1 rounded-md hover:bg-neutral-100"
                           title="Delete"
+                          onClick={() =>
+                            handleDelete(recruitment._id || recruitment.id!)
+                          }
                         >
                           <Trash2 size={16} className="text-error-600" />
                         </button>
@@ -511,7 +700,10 @@ const ClubRecruitment: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-neutral-500">
+                  <td
+                    colSpan={7}
+                    className="px-6 py-10 text-center text-sm text-neutral-500"
+                  >
                     No recruitments found matching your filters.
                   </td>
                 </tr>
@@ -523,23 +715,37 @@ const ClubRecruitment: React.FC = () => {
 
       {/* Tips Section */}
       <div className="mt-8 bg-primary-50 rounded-xl p-6 border border-primary-100">
-        <h3 className="text-lg font-semibold mb-3 text-primary-900">Recruitment Management Tips</h3>
+        <h3 className="text-lg font-semibold mb-3 text-primary-900">
+          Recruitment Management Tips
+        </h3>
         <ul className="space-y-2 text-primary-800">
           <li className="flex items-start">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 mr-2"></span>
-            <span>Set clear start and end dates/times for automatic recruitment management.</span>
+            <span>
+              Set clear start and end dates/times for automatic recruitment
+              management.
+            </span>
           </li>
           <li className="flex items-start">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 mr-2"></span>
-            <span>Recruitment forms will automatically close when the end date/time is reached.</span>
+            <span>
+              Recruitment forms will automatically close when the end date/time is
+              reached.
+            </span>
           </li>
           <li className="flex items-start">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 mr-2"></span>
-            <span>Create detailed descriptions to attract the right candidates for your club.</span>
+            <span>
+              Create detailed descriptions to attract the right candidates for your
+              club.
+            </span>
           </li>
           <li className="flex items-start">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 mr-2"></span>
-            <span>Monitor applicant numbers and extend deadlines if needed before the end time.</span>
+            <span>
+              Monitor applicant numbers and extend deadlines if needed before the end
+              time.
+            </span>
           </li>
         </ul>
       </div>
