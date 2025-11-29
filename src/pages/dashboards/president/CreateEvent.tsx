@@ -90,45 +90,76 @@ if (!isWithinAllowedTime(formData.startTime) || !isWithinAllowedTime(formData.en
   const handleBack = () => setCurrentStep(prev => prev - 1);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    const submission = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === 'bannerImage' || key === 'clubLogo') {
-        if (value) submission.append(key, value);
-      } else if (key === 'schedule') {
-        submission.append('schedule', JSON.stringify(value));
-      } else if (key === 'schedule' || key === 'targetAudience') {
-  submission.append(key, JSON.stringify(value));
-      } else {
+  const submission = new FormData();
+
+  Object.entries(formData).forEach(([key, value]) => {
+
+    // FILES
+    if (key === 'bannerImage' || key === 'clubLogo') {
+      if (value) {
         submission.append(key, value);
       }
+      return;
+    }
+
+    // SCHEDULE (array of objects)
+    if (key === 'schedule') {
+      submission.append('schedule', JSON.stringify(value));
+      return;
+    }
+
+    // TARGET AUDIENCE (array)
+    if (key === 'targetAudience') {
+      submission.append('targetAudience', JSON.stringify(value));
+      return;
+    }
+
+    // NUMBERS
+    if (key === 'attendees' || key === 'capacity') {
+      submission.append(key, Number(value));
+      return;
+    }
+
+    if (key === 'ticketPrice' || key === 'ticketQuantity') {
+      if (formData.isTicketed === 'yes') {
+        submission.append(key, Number(value));
+      }
+      return;
+    }
+
+    // DEFAULT
+    submission.append(key, value);
+  });
+
+  try {
+    const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
+
+    const res = await fetch(`${API}/api/events/create`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: submission,
     });
 
-    try {
-     const token = JSON.parse(localStorage.getItem("campusEventsUser"))?.token;
+    const data = await res.json();
 
-const res = await fetch(`${API}/api/events/create`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${token}`, // <-- use the parsed token
-  },
-  body: submission,
-});
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success('✅ Event created successfully!');
-        navigate('/dashboard/president/history');
-      } else {
-        toast.error(data.message || '❌ Submission failed');
-      }
-    } catch (err) {
-      toast.error('❌ Server error');
+    if (res.ok) {
+      toast.success("✅ Event created successfully!");
+      navigate("/dashboard/president/history");
+    } else {
+      toast.error(data.message || "❌ Submission failed");
     }
-    setLoading(false);
-  };
+  } catch (err) {
+    toast.error("❌ Server error");
+  }
+
+  setLoading(false);
+};
+
 
 const renderStepIndicator = () => {
   return (
