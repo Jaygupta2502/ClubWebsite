@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { 
@@ -13,23 +13,51 @@ const FacultyProfile: React.FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: user?.name || 'Dr. Taylor Wright',
-    email: user?.email || 'taylor.wright@example.com',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    theme: theme,
-    department: 'Computer Science',
-    designation: 'Associate Professor',
-    specialization: 'Artificial Intelligence & Machine Learning',
-    experience: '8 years',
-    phone: '+1 (555) 123-4568',
-    office: 'CS Block, Room 301',
-    qualification: 'Ph.D. in Computer Science',
-    clubsSupervised: '3',
-    eventsApproved: '45',
-    researchPapers: '28'
-  });
+  name: "",
+  email: "",
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+  theme: theme,
+  department: "",
+  designation: "",
+  specialization: "",
+  experience: "",
+  phone: "",
+  office: "",
+  qualification: "",
+  clubsSupervised: "",
+  eventsApproved: "",
+  researchPapers: ""
+});
+
+useEffect(() => {
+  async function loadProfile() {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/faculty/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      setProfileData(prev => ({
+        ...prev,
+        ...data
+      }));
+    } catch (err) {
+      console.error("Failed to load profile", err);
+    }
+  }
+
+  loadProfile();
+}, []);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -43,33 +71,64 @@ const FacultyProfile: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Profile updated:', profileData);
-    setIsEditing(false);
-  };
+  const handleSave = async (e) => {
+  e.preventDefault();
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setProfileData({
-      name: user?.name || 'Dr. Taylor Wright',
-      email: user?.email || 'taylor.wright@example.com',
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-      theme: theme,
-      department: 'Computer Science',
-      designation: 'Associate Professor',
-      specialization: 'Artificial Intelligence & Machine Learning',
-      experience: '8 years',
-      phone: '+1 (555) 123-4568',
-      office: 'CS Block, Room 301',
-      qualification: 'Ph.D. in Computer Science',
-      clubsSupervised: '3',
-      eventsApproved: '45',
-      researchPapers: '28'
-    });
-  };
+  const token = localStorage.getItem("token");
+
+  await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/faculty/profile`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(profileData),
+    }
+  );
+
+  if (profileData.currentPassword && profileData.newPassword) {
+    await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/faculty/password`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: profileData.currentPassword,
+          newPassword: profileData.newPassword,
+        }),
+      }
+    );
+  }
+
+  setIsEditing(false);
+};
+
+
+  const handleCancel = async () => {
+  setIsEditing(false);
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/faculty/profile`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await res.json();
+  setProfileData(prev => ({
+    ...prev,
+    ...data
+  }));
+};
+
 
   return (
     <div>

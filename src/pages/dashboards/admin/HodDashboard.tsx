@@ -71,6 +71,8 @@ const HodDashboard: React.FC = () => {
   const [stats, setStats] = useState([]);
   const [clubReports, setClubReports] = useState([]);
   const [selectedReportEvent, setSelectedReportEvent] = useState<any>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
 const [showReportModal, setShowReportModal] = useState(false);
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -120,8 +122,59 @@ useEffect(() => {
   fetchFaculty();
 }, []);
 
+useEffect(() => {
+  if (activeTab !== 'event_history') return;
 
+  const fetchUpcomingEvents = async () => {
+    const token = JSON.parse(
+      localStorage.getItem('campusEventsUser') || '{}'
+    )?.token;
 
+    try {
+      const res = await fetch(`${API}/api/events/hod/upcoming-events`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error('Fetch failed');
+
+      const data = await res.json();
+      setUpcomingEvents(data);
+    } catch (err) {
+      console.error('❌ Fetch upcoming events failed:', err);
+    }
+  };
+
+  fetchUpcomingEvents();
+}, [activeTab]);
+const handleDeleteEventPermanently = async (eventId: string) => {
+  if (!confirm('⚠️ This will permanently delete the event. Continue?')) return;
+
+  const token = JSON.parse(
+    localStorage.getItem('campusEventsUser') || '{}'
+  )?.token;
+
+  try {
+    const res = await fetch(`${API}/api/events/hod/delete/${eventId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('❌ ' + err.message);
+      return;
+    }
+
+    setUpcomingEvents(prev => prev.filter(e => e._id !== eventId));
+    alert('✅ Event permanently deleted');
+  } catch (err) {
+    alert('❌ Server error');
+  }
+};
 useEffect(() => {
   const fetchReports = async () => {
     const token = JSON.parse(localStorage.getItem('campusEventsUser'))?.token;
@@ -157,10 +210,24 @@ useEffect(() => {
   fetchReports();
 }, []);
 
+useEffect(() => {
+  const fetchAnalytics = async () => {
+    const token = JSON.parse(
+      localStorage.getItem("campusEventsUser") || "{}"
+    )?.token;
 
+    const res = await fetch(`${API}/api/hod/analytics`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
 
+    const data = await res.json();
+    setAnalyticsData(data);
+  };
 
-
+  fetchAnalytics();
+}, []);
 
 const [statsData, setStatsData] = useState({
   activeClubs: 0,
@@ -256,35 +323,7 @@ useEffect(() => {
   });
 
 
-  // Sample data for analytics
-  const analyticsData = {
-    eventsByClub: {
-      labels: ['Aces Club', 'Swift Club', 'AWS Club', 'Cloud Computing', 'Photography Club'],
-      datasets: [{
-        label: 'Number of Events',
-        data: [12, 8, 15, 10, 6],
-        backgroundColor: ['#6B46C1', '#0E78F9', '#FF6B4A', '#22C55E', '#F59E0B'],
-      }]
-    },
-    participationTrend: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        label: 'Student Participation',
-        data: [250, 320, 280, 450, 400, 480],
-        borderColor: '#6B46C1',
-        backgroundColor: 'rgba(107, 70, 193, 0.1)',
-        tension: 0.4,
-        fill: true,
-      }]
-    },
-    venueUtilization: {
-      labels: ['Main Auditorium', 'Conference Hall', 'Labs', 'Classrooms', 'Sports Complex'],
-      datasets: [{
-        data: [40, 25, 20, 10, 5],
-        backgroundColor: ['#6B46C1', '#0E78F9', '#FF6B4A', '#22C55E', '#F59E0B'],
-      }]
-    }
-  };
+  
 
   // Sample data for management
   const managementData = {
@@ -443,6 +482,33 @@ const handleEditSubmit = async (e: React.FormEvent) => {
   }
 };
 
+const eventsByClubChart = {
+  labels: analyticsData?.eventsByClub.map(e => e._id),
+  datasets: [{
+    label: "Number of Events",
+    data: analyticsData?.eventsByClub.map(e => e.count),
+    backgroundColor: "#6B46C1"
+  }]
+};
+
+const participationTrendChart = {
+  labels: analyticsData?.participationTrend.map(p => p._id),
+  datasets: [{
+    label: "Participants",
+    data: analyticsData?.participationTrend.map(p => p.participants),
+    borderColor: "#6B46C1",
+    fill: true
+  }]
+};
+
+const venueUtilizationChart = {
+  labels: analyticsData?.venueUtilization.map(v => v._id),
+  datasets: [{
+    data: analyticsData?.venueUtilization.map(v => v.count),
+    backgroundColor: ["#6B46C1", "#0E78F9", "#22C55E", "#F59E0B"]
+  }]
+};
+
 
   const filteredReports = clubReports.filter((report) => {
   const clubMatch = selectedClub === 'all' || report.club === selectedClub;
@@ -552,7 +618,7 @@ const handleEditSubmit = async (e: React.FormEvent) => {
 
         {/* Tab Content */}
         <div className="p-6">
-          {activeTab === 'analytics' && (
+          {activeTab === 'analytics' && analyticsData && (
             <div>
               {/* Analytics Filters */}
               <div className="mb-8">
@@ -564,9 +630,11 @@ const handleEditSubmit = async (e: React.FormEvent) => {
                     onChange={(e) => setSelectedClub(e.target.value)}
                   >
                     <option value="all">All Clubs</option>
-                    {managementData.activeClubs.map(club => (
-                      <option key={club.id} value={club.name}>{club.name}</option>
-                    ))}
+                    {clubs.map(club => (
+  <option key={club._id} value={club.clubName}>
+    {club.clubName}
+  </option>
+))}
                   </select>
                   <select 
                     className="input"
@@ -603,13 +671,13 @@ const handleEditSubmit = async (e: React.FormEvent) => {
                 <div className="bg-neutral-50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold mb-6">Events by Club</h3>
                   <div className="h-64">
-                    <Bar data={analyticsData.eventsByClub} options={chartOptions} />
+                    <Bar data={eventsByClubChart} options={chartOptions} />
                   </div>
                 </div>
                 <div className="bg-neutral-50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold mb-6">Participation Trend</h3>
                   <div className="h-64">
-                    <Line data={analyticsData.participationTrend} options={chartOptions} />
+                    <Line data={participationTrendChart} options={chartOptions} />
                   </div>
                 </div>
               </div>
@@ -618,7 +686,7 @@ const handleEditSubmit = async (e: React.FormEvent) => {
                 <div className="bg-neutral-50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold mb-6">Venue Utilization</h3>
                   <div className="h-64">
-                    <Doughnut data={analyticsData.venueUtilization} options={chartOptions} />
+                    <Doughnut data={venueUtilizationChart} options={chartOptions} />
                   </div>
                 </div>
                 <div className="bg-neutral-50 rounded-xl p-6">
@@ -666,11 +734,41 @@ const handleEditSubmit = async (e: React.FormEvent) => {
             </div>
           )}
 
-          {activeTab === 'event_history' && (
+         {activeTab === 'event_history' && (
   <div>
-    <EventHistoryHOD />
+    <h2 className="text-lg font-semibold mb-6">Upcoming Approved Events</h2>
+
+    {upcomingEvents.length === 0 && (
+      <p className="text-neutral-600">No upcoming approved events.</p>
+    )}
+
+    <div className="space-y-4">
+      {upcomingEvents.map(event => (
+        <div
+          key={event._id}
+          className="p-4 bg-white border border-neutral-200 rounded-lg flex justify-between"
+        >
+          <div>
+            <h3 className="font-semibold">{event.title}</h3>
+            <p className="text-sm text-neutral-600">
+              {event.date} | {event.startTime} - {event.endTime}
+            </p>
+            <p className="text-sm text-neutral-600">Venue: {event.venue}</p>
+            <p className="text-sm text-neutral-600">Club: {event.club}</p>
+          </div>
+
+          <button
+            className="btn-outline text-error-600 border-error-300"
+            onClick={() => handleDeleteEventPermanently(event._id)}
+          >
+            Delete
+          </button>
+        </div>
+      ))}
+    </div>
   </div>
 )}
+
 
           {activeTab === 'management' && (
             <div>
@@ -912,7 +1010,7 @@ const handleEditSubmit = async (e: React.FormEvent) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-neutral-200">
-                     {clubReports.map((event: any, index: number) => (
+                     {filteredReports.map((event: any, index: number) => (
   <tr key={event._id || index} className="hover:bg-neutral-50">
     <td className="px-6 py-4 whitespace-nowrap">
       <div className="font-medium">{event.title}</div>

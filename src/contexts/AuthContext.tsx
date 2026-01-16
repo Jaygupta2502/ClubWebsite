@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import api from '../lib/axios';
 
 type User = {
   id: string;
@@ -9,7 +9,9 @@ type User = {
   club?: string;
   clubId?: string;
   clubName?: string;
+  department?: string;
   profileImage?: string;
+  token?: string; // <-- added
 };
 
 type AuthContextType = {
@@ -26,84 +28,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load from localStorage on refresh
   useEffect(() => {
-    // Check for saved user in localStorage
     const savedUser = localStorage.getItem('campusEventsUser');
+    const savedToken = localStorage.getItem('token');
+
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const parsed = JSON.parse(savedUser);
+
+      // If old data missing token → patch it
+      if (savedToken && !parsed.token) {
+        parsed.token = savedToken;
+        localStorage.setItem('campusEventsUser', JSON.stringify(parsed));
+      }
+
+      setUser(parsed);
     }
+
     setLoading(false);
   }, []);
+
   const login = async (email: string, password: string) => {
     try {
-      const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  }
-);
+      const { data } = await api.post('/api/auth/login', { email, password });
 
+      if (!data?.token || !data?.user) {
+        throw new Error('Invalid response from server');
+      }
 
-      const data = await res.json();
+      // Store token for axios interceptor
+      localStorage.setItem('token', data.token);
 
-      if (!res.ok) throw new Error(data.message || "Login failed");
+      // Store user + token together (fix for dashboard)
+      localStorage.setItem(
+        'campusEventsUser',
+        JSON.stringify({
+          ...data.user,
+          token: data.token,
+        })
+      );
 
-      const fullUser = { ...data.user, token: data.token };
-
-localStorage.setItem("campusEventsUser", JSON.stringify(fullUser)); // ✅ reuse already-declared fullUser
-setUser(fullUser);
-    } catch (err) {
-      throw err;
+      // Update context state
+      setUser({
+        ...data.user,
+        token: data.token,
+      });
+    } catch (error: any) {
+      throw new Error(error?.response?.data?.message || error.message || 'Login failed');
     }
   };
-  
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("campusEventsUser");
+    localStorage.removeItem('token');
+    localStorage.removeItem('campusEventsUser');
     setUser(null);
   };
 
-useEffect(() => {
-  const savedUser = localStorage.getItem("campusEventsUser");
-
-  if (import.meta.env.DEV) {
-    const cleared = localStorage.getItem("devAutoLogoutDone");
-    if (!cleared) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("campusEventsUser");
-      localStorage.setItem("devAutoLogoutDone", "true");
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-  }
-
-  if (savedUser) {
-    setUser(JSON.parse(savedUser));
-  }
-  setLoading(false);
-}, []);
-
-
-
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used inside AuthProvider');
   }
   return context;
 };

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
+import api from '../../../lib/axios';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { 
@@ -12,25 +13,57 @@ const HodProfile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: user?.name || 'Dr. Morgan Lee',
-    email: user?.email || 'morgan.lee@example.com',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    theme: theme,
-    department: 'Computer Science & Engineering',
-    designation: 'Professor & Head of Department',
-    specialization: 'Software Engineering & Database Systems',
-    experience: '15 years',
-    phone: '+1 (555) 123-4569',
-    office: 'CS Block, Room 401',
-    qualification: 'Ph.D. in Computer Science, M.Tech in Software Engineering',
-    facultyCount: '16',
-    studentCount: '450',
-    clubsInDept: '5',
-    departmentBudget: '$250,000'
-  });
+const [profileData, setProfileData] = useState({
+  name: '',
+  email: '',
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+  theme: theme,
+  department: '',
+  designation: '',
+  specialization: '',
+  experience: '',
+  phone: '',
+  office: '',
+  qualification: '',
+  facultyCount: '',
+  studentCount: '',
+  clubsInDept: '',
+  departmentBudget: ''
+});
+
+const sanitizeProfile = (data: any) => ({
+  name: data.name || "",
+  email: data.email || "",
+  theme: data.theme || "light",
+  department: data.department || "",
+  designation: data.designation || "",
+  specialization: data.specialization || "",
+  experience: data.experience || "",
+  phone: data.phone || "",
+  office: data.office || "",
+  qualification: data.qualification || "",
+  facultyCount: data.facultyCount ?? "",  // number
+  studentCount: data.studentCount ?? "",
+  clubsInDept: data.clubsInDept ?? "",
+  departmentBudget: data.departmentBudget || "",
+  
+  // keep password empty always
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: ""
+});
+
+useEffect(() => {
+  async function loadProfile() {
+    const response = await api.get('/api/hod/profile');
+    const clean = sanitizeProfile(response.data);
+    setProfileData(clean);
+  }
+  loadProfile();
+}, []);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -44,34 +77,30 @@ const HodProfile: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Profile updated:', profileData);
-    setIsEditing(false);
-  };
+  const handleSave = async (e: React.FormEvent) => {
+  e.preventDefault();
+  await api.put('/api/hod/profile', profileData);
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setProfileData({
-      name: user?.name || 'Dr. Morgan Lee',
-      email: user?.email || 'morgan.lee@example.com',
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-      theme: theme,
-      department: 'Computer Science & Engineering',
-      designation: 'Professor & Head of Department',
-      specialization: 'Software Engineering & Database Systems',
-      experience: '15 years',
-      phone: '+1 (555) 123-4569',
-      office: 'CS Block, Room 401',
-      qualification: 'Ph.D. in Computer Science, M.Tech in Software Engineering',
-      facultyCount: '16',
-      studentCount: '450',
-      clubsInDept: '5',
-      departmentBudget: '$250,000'
+  if (profileData.currentPassword && profileData.newPassword) {
+    await api.put('/api/hod/password', {
+      currentPassword: profileData.currentPassword,
+      newPassword: profileData.newPassword,
     });
-  };
+  }
+
+  setIsEditing(false);
+  loadProfile();
+};
+
+ const handleCancel = () => {
+  setIsEditing(false);
+  // Reload data from backend instead of fake defaults
+  (async () => {
+    const response = await api.get('/api/hod/profile');
+    setProfileData(sanitizeProfile(response.data));
+  })();
+};
+
 
   return (
     <div>
@@ -235,7 +264,7 @@ const HodProfile: React.FC = () => {
                     <input
                       type="tel"
                       name="phone"
-                      value={profileData.phone}
+                      value={profileData.phone || ""}
                       onChange={handleInputChange}
                       className="input"
                       disabled={!isEditing}

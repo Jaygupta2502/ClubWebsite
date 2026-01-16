@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import api from "../../../lib/axios";
 import { useTheme } from '../../../contexts/ThemeContext';
 import { 
   User, Mail, Lock, Upload, Save, Eye, EyeOff, 
@@ -32,6 +33,43 @@ const DeanProfile: React.FC = () => {
     collegeBudget: '$2.5M'
   });
 
+  const sanitizeDean = (data: any) => ({
+  name: data.name || "",
+  email: data.email || "",
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+  theme: data.theme || "light",
+  college: data.college || "",
+  designation: data.designation || "",
+  specialization: data.specialization || "",
+  experience: data.experience || "",
+  phone: data.phone || "",
+  office: data.office || "",
+  qualification: data.qualification || "",
+  departmentCount: data.departmentCount ?? "",
+  facultyCount: data.facultyCount ?? "",
+  studentCount: data.studentCount ?? "",
+  collegeBudget: data.collegeBudget || ""
+});
+
+useEffect(() => {
+  async function loadDean() {
+    try {
+      const res = await api.get("/api/dean/profile", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const clean = sanitizeDean(res.data);
+      setProfileData(clean);
+    } catch (err) {
+      console.error("Dean profile load error:", err);
+    }
+  }
+  loadDean();
+}, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setProfileData(prev => ({
@@ -44,11 +82,54 @@ const DeanProfile: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Profile updated:', profileData);
+ const handleSave = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    await api.put(
+      "/api/dean/profile",
+      {
+        phone: profileData.phone,
+        office: profileData.office,
+        designation: profileData.designation,
+        specialization: profileData.specialization,
+        experience: profileData.experience,
+        qualification: profileData.qualification,
+        departmentCount: profileData.departmentCount,
+        facultyCount: profileData.facultyCount,
+        studentCount: profileData.studentCount,
+        collegeBudget: profileData.collegeBudget,
+        theme: profileData.theme,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
     setIsEditing(false);
-  };
+  } catch (err) {
+    console.error("Dean update error:", err);
+  }
+};
+
+const handlePasswordChange = async () => {
+  try {
+    await api.put(
+      "/api/dean/password",
+      {
+        currentPassword: profileData.currentPassword,
+        newPassword: profileData.newPassword,
+      },
+      {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      }
+    );
+    alert("Password Updated");
+  } catch (err) {
+    alert("Error updating password");
+  }
+};
+
 
   const handleCancel = () => {
     setIsEditing(false);
